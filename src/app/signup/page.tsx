@@ -4,8 +4,7 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFirebase, useUser } from '@/firebase';
-import { initiateEmailSignUp } from '@/firebase/non-blocking-login';
-import { updateProfile } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,15 +37,15 @@ export default function SignUpPage() {
     setLoading(true);
     setError(null);
     try {
-      const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
 
       await updateProfile(firebaseUser, { displayName: username });
       
       const userDocRef = doc(firestore, "users", firebaseUser.uid);
       await setDoc(userDocRef, {
-        uid: firebaseUser.uid,
-        displayName: username,
+        id: firebaseUser.uid,
+        username: username,
         email: firebaseUser.email,
         createdAt: new Date().toISOString(),
         totalStudyTime: 0,
@@ -55,7 +54,14 @@ export default function SignUpPage() {
       router.push('/');
 
     } catch (err: any) {
-      setError(err.message);
+      // More user-friendly error messages
+      if (err.code === 'auth/email-already-in-use') {
+        setError('This email address is already in use.');
+      } else if (err.code === 'auth/weak-password') {
+        setError('The password is too weak. Please use at least 6 characters.');
+      } else {
+        setError(err.message);
+      }
       setLoading(false);
     }
   };

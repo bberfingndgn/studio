@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Companion } from '@/components/dashboard/Companion';
 import { Flower } from '@/components/dashboard/Flower';
 import { StudyTimer } from '@/components/dashboard/StudyTimer';
@@ -8,25 +8,45 @@ import { UpcomingAchievements } from '@/components/dashboard/UpcomingAchievement
 import { SECONDS_TO_GROW_FLOWER, USER_NAME } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import { achievements } from '@/lib/data';
+import { useFirebase, useUser, useDoc, useMemoFirebase } from '@/firebase';
+import { useRouter } from 'next/navigation';
+import { doc, setDoc } from 'firebase/firestore';
 
 type TimerStatus = 'running' | 'paused' | 'stopped';
 
 export default function Home() {
-  // Using a single state object to manage related states
-  const [studyState, setStudyState] = useState({
-    totalStudyTime: 14000, // Start with some progress
-    timerStatus: 'stopped' as TimerStatus,
-  });
+  const { user, isUserLoading } = useUser();
+  const router = useRouter();
+  const { firestore } = useFirebase();
 
+  const userProfileRef = useMemoFirebase(() => 
+    user ? doc(firestore, 'users', user.uid) : null,
+    [firestore, user]
+  );
+  
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc<{totalStudyTime: number}>(userProfileRef);
+
+  const [timerStatus, setTimerStatus] = useState<TimerStatus>('stopped');
   const { toast } = useToast();
 
-  const flowerProgress = (studyState.totalStudyTime % SECONDS_TO_GROW_FLOWER) / SECONDS_TO_GROW_FLOWER * 100;
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, isUserLoading, router]);
 
-  const handleSessionComplete = useCallback((sessionDuration: number) => {
-    const newTotalStudyTime = studyState.totalStudyTime + sessionDuration;
+  const totalStudyTime = userProfile?.totalStudyTime ?? 0;
+  const flowerProgress = (totalStudyTime % SECONDS_TO_GROW_FLOWER) / SECONDS_TO_GROW_FLOWER * 100;
+
+  const handleSessionComplete = useCallback(async (sessionDuration: number) => {
+    if (!user || !userProfileRef) return;
+
+    const newTotalStudyTime = totalStudyTime + sessionDuration;
+
+    // This is a non-blocking update
+    setDoc(userProfileRef, { totalStudyTime: newTotalStudyTime }, { merge: true });
     
-    // Check for flower completion
-    const oldFlowers = Math.floor(studyState.totalStudyTime / SECONDS_TO_GROW_FLOWER);
+    const oldFlowers = Math.floor(totalStudyTime / SECONDS_TO_GROW_FLOWER);
     const newFlowers = Math.floor(newTotalStudyTime / SECONDS_TO_GROW_FLOWER);
 
     if (newFlowers > oldFlowers) {
@@ -36,10 +56,9 @@ export default function Home() {
       });
     }
     
-    // Check for achievement unlocks
     achievements.forEach(achievement => {
       if (!achievement.unlocked && newTotalStudyTime >= (achievement.milestoneHours * 3600)) {
-        achievement.unlocked = true; // This would be a DB update in a real app
+        achievement.unlocked = true; 
         toast({
           title: "Achievement Unlocked! 🏆",
           description: `You've earned the "${achievement.title}" badge!`,
@@ -47,12 +66,25 @@ export default function Home() {
       }
     });
 
-    setStudyState(prevState => ({ ...prevState, totalStudyTime: newTotalStudyTime }));
-  }, [studyState.totalStudyTime, toast]);
+  }, [totalStudyTime, user, userProfileRef, toast]);
 
   const handleStatusChange = (status: TimerStatus) => {
-    setStudyState(prevState => ({ ...prevState, timerStatus: status }));
+    setTimerStatus(status);
   };
+  
+  if (isUserLoading || isProfileLoading) {
+      // You can return a loading spinner here
+      return (
+          <div className="flex items-center justify-center flex-1">
+              <p>Loading...</p>
+          </div>
+      )
+  }
+  
+  if (!user) {
+      return null; // or a message encouraging login
+  }
+
 
   return (
     <div className="flex-1 container mx-auto p-4 md:p-8">
@@ -61,9 +93,9 @@ export default function Home() {
         {/* Left Column: Companion */}
         <div className="lg:col-span-1 xl:col-span-1 w-full order-2 lg:order-1">
           <Companion
-            timerStatus={studyState.timerStatus}
+            timerStatus={timerStatus}
             progressPercentage={flowerProgress}
-            userName={USER_NAME}
+            userName={user.displayName || USER_NAME}
           />
         </div>
 
@@ -78,7 +110,7 @@ export default function Home() {
         
         {/* Right Column: Achievements */}
         <div className="lg:col-span-1 xl:col-span-1 w-full order-3 lg:order-3">
-          <UpcomingAchievements currentStudyTime={studyState.totalStudyTime} />
+          <UpcomingAchievements currentStudyTime={totalStudyTime} />
         </div>
 
       </div>

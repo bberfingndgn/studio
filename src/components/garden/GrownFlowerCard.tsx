@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { type GrownFlower } from '@/lib/types';
 import { type ImagePlaceholder } from '@/lib/placeholder-images';
@@ -20,30 +21,34 @@ const subjectColors: Record<string, string> = {
 
 export function GrownFlowerCard({ flower, flowerData }: GrownFlowerCardProps) {
   return (
-    <Card className="overflow-hidden group transition-all hover:shadow-xl hover:-translate-y-1">
-      <CardContent className="p-0">
-        <div className="aspect-square overflow-hidden">
-          <Image
-            src={flowerData.imageUrl}
-            alt={flowerData.description}
-            width={400}
-            height={400}
-            data-ai-hint={flowerData.imageHint}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
-        </div>
-        <div className="p-4 bg-card space-y-3">
-           <Badge variant="outline" className={cn("font-medium", subjectColors[flower.subject] || 'border-gray-300')}>
-              <Book className="w-3.5 h-3.5 mr-1.5" />
-              {flower.subject}
-            </Badge>
-          <h3 className="font-semibold capitalize text-foreground">{flowerData.description}</h3>
-          <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-            <Calendar className="w-3.5 h-3.5" />
-            <span>Grown on {flower.grownAt.toLocaleDateString()}</span>
+    <Link href={`/subjects/${encodeURIComponent(flower.subject)}`} className="block group">
+      <Card className="overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1 h-full">
+        <CardContent className="p-0 flex flex-col h-full">
+          <div className="aspect-square overflow-hidden">
+            <Image
+              src={flowerData.imageUrl}
+              alt={flower.subject}
+              width={400}
+              height={400}
+              data-ai-hint={flowerData.imageHint}
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
           </div>
-        </div>
-      </CardContent>
-    </Card>
+          <div className="p-4 bg-card space-y-3 flex-1 flex flex-col justify-between">
+            <div>
+              <Badge variant="outline" className={cn("font-medium", subjectColors[flower.subject] || 'border-gray-300')}>
+                  <Book className="w-3.5 h-3.5 mr-1.5" />
+                  {flower.subject}
+              </Badge>
+              <h3 className="font-semibold capitalize text-foreground mt-3">{flower.subject}</h3>
+            </div>
+            <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+              <Calendar className="w-3.5 h-3.5" />
+              <span>Grown on {flower.grownAt.toLocaleDateString()}</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }

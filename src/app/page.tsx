@@ -8,11 +8,23 @@ import { UpcomingAchievements } from '@/components/dashboard/UpcomingAchievement
 import { SECONDS_TO_GROW_FLOWER, USER_NAME } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import { achievements } from '@/lib/data';
-import { useFirebase, useUser, useDoc, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
+import { useFirebase, useUser, useDoc, useCollection, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { doc, setDoc, collection } from 'firebase/firestore';
+import { doc, setDoc, collection, query, where, orderBy } from 'firebase/firestore';
+import { GrownFlowerCard } from '@/components/garden/GrownFlowerCard';
+import type { GrownFlower, StudySession } from '@/lib/types';
+import { placeholderImages } from '@/lib/placeholder-images';
+import type { ImagePlaceholder } from '@/lib/placeholder-images';
 
 type TimerStatus = 'running' | 'paused' | 'stopped';
+
+const subjectToFlowerType: Record<string, string> = {
+  "Mathematics": "rose",
+  "Science": "sunflower",
+  "Social Studies": "tulip",
+  "English": "daisy",
+};
+
 
 export default function Home() {
   const { user, isUserLoading } = useUser();
@@ -26,9 +38,20 @@ export default function Home() {
   
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<{totalStudyTime: number}>(userProfileRef);
 
+  const studySessionsRef = useMemoFirebase(() =>
+    user ? collection(firestore, 'users', user.uid, 'studySessions') : null, [firestore, user]
+  );
+  
+  const { data: studySessions, isLoading: isSessionsLoading } = useCollection<StudySession>(studySessionsRef);
+
   const [timerStatus, setTimerStatus] = useState<TimerStatus>('stopped');
   const [selectedSubject, setSelectedSubject] = useState('Mathematics');
   const { toast } = useToast();
+  
+  const flowerDataMap = useMemo(() => placeholderImages.reduce((acc, img) => {
+    acc[img.id] = img;
+    return acc;
+  }, {} as Record<string, ImagePlaceholder>), []);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -38,6 +61,38 @@ export default function Home() {
 
   const totalStudyTime = userProfile?.totalStudyTime ?? 0;
   const flowerProgress = (totalStudyTime % SECONDS_TO_GROW_FLOWER) / SECONDS_TO_GROW_FLOWER * 100;
+  
+  const grownFlowers: GrownFlower[] = useMemo(() => {
+    if (!studySessions) return [];
+
+    const subjectTimes: Record<string, number> = {};
+    studySessions.forEach(session => {
+        const subject = session.subjectId; // subjectId is the name for now
+        if (!subjectTimes[subject]) {
+            subjectTimes[subject] = 0;
+        }
+        subjectTimes[subject] += session.duration * 60; // convert minutes to seconds
+    });
+
+    const flowers: GrownFlower[] = [];
+    Object.keys(subjectTimes).forEach(subject => {
+        const totalTime = subjectTimes[subject];
+        const flowersGrown = Math.floor(totalTime / SECONDS_TO_GROW_FLOWER);
+        const flowerTypeId = subjectToFlowerType[subject] || 'rose';
+
+        for(let i=0; i<flowersGrown; i++) {
+            flowers.push({
+                id: `${subject}-${i}`,
+                subject: subject,
+                flowerTypeId: flowerTypeId,
+                grownAt: new Date(), // This could be made more precise if needed
+            });
+        }
+    });
+
+    return flowers;
+
+  }, [studySessions]);
 
   const handleSessionComplete = useCallback(async (sessionDuration: number, subject: string) => {
     if (!user || !userProfileRef || !firestore) return;
@@ -56,7 +111,6 @@ export default function Home() {
       duration: sessionDuration / 60, // duration in minutes
     });
     
-    // This is a non-blocking update
     setDoc(userProfileRef, { totalStudyTime: newTotalStudyTime }, { merge: true });
     
     const oldFlowers = Math.floor(totalStudyTime / SECONDS_TO_GROW_FLOWER);
@@ -85,8 +139,7 @@ export default function Home() {
     setTimerStatus(status);
   };
   
-  if (isUserLoading || isProfileLoading) {
-      // You can return a loading spinner here
+  if (isUserLoading || isProfileLoading || isSessionsLoading) {
       return (
           <div className="flex items-center justify-center flex-1">
               <p>Loading...</p>
@@ -95,15 +148,13 @@ export default function Home() {
   }
   
   if (!user) {
-      return null; // or a message encouraging login
+      return null;
   }
-
 
   return (
     <div className="flex-1 container mx-auto p-4 md:p-8">
       <div className="grid grid-cols-1 lg:grid-cols-4 xl:grid-cols-5 gap-8 items-start">
         
-        {/* Left Column: Companion */}
         <div className="lg:col-span-1 xl:col-span-1 w-full order-2 lg:order-1">
           <Companion
             timerStatus={timerStatus}
@@ -112,7 +163,6 @@ export default function Home() {
           />
         </div>
 
-        {/* Center Column: Flower & Timer */}
         <div className="lg:col-span-2 xl:col-span-3 flex flex-col items-center justify-center gap-8 order-1 lg:order-2">
           <Flower progress={flowerProgress} subject={selectedSubject} />
           <StudyTimer 
@@ -123,12 +173,39 @@ export default function Home() {
           />
         </div>
         
-        {/* Right Column: Achievements */}
         <div className="lg:col-span-1 xl:col-span-1 w-full order-3 lg:order-3">
           <UpcomingAchievements currentStudyTime={totalStudyTime} />
         </div>
 
       </div>
+
+       <div className="mt-16">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-bold font-headline text-primary">My Garden</h2>
+            <p className="text-muted-foreground mt-2">A collection of flowers you've grown.</p>
+          </div>
+           {grownFlowers.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+              {grownFlowers.map((flower) => {
+                const flowerData = flowerDataMap[flower.flowerTypeId];
+                if (!flowerData) return null;
+                return (
+                  <GrownFlowerCard 
+                    key={flower.id} 
+                    flower={flower} 
+                    flowerData={flowerData}
+                  />
+                );
+              })}
+            </div>
+           ) : (
+             <div className="col-span-full text-center py-16 bg-muted/50 rounded-lg">
+                <p className="text-muted-foreground">Your garden is waiting to bloom!</p>
+                <p className="text-sm text-muted-foreground/80">Complete study sessions to grow your first flower.</p>
+             </div>
+           )}
+       </div>
+
     </div>
   );
 }

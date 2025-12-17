@@ -1,0 +1,174 @@
+/**
+ * Core Philosophy: This ruleset enforces a strict user-ownership model where all user-generated
+ * data is private and accessible only to the user who created it. The security model is designed
+ * for high performance and strong authorization by avoiding cross-document reads (`get()` calls).
+ *
+ * Data Structure: All user-specific data, including subjects, study sessions, flowers, and
+ * achievements, is nested within a user's own document path: /users/{userId}/... This creates
+ * a secure, siloed data structure for each user.
+ *
+ * Key Security Decisions:
+ * - User data is strictly private. A user can only access documents under their own /users/{userId} path.
+ * - Listing all users from the top-level /users collection is explicitly disallowed to protect user privacy.
+ * - All subcollections (e.g., subjects, studySessions) are listable, but only by the owner of that data tree.
+ * - Data integrity is enforced by ensuring that any document created within a user's data tree contains a
+ *   `userId` field that correctly references the parent user, and this field is immutable.
+ *
+ * Denormalization for Authorization: The data structure naturally supports this principle. By placing all
+ * user-specific data under a path containing their UID (`/users/{userId}`), authorization checks become
+ * simple and fast path comparisons (`request.auth.uid == userId`) without needing to read other documents.
+ *
+ * Structural Segregation: The design uses separate subcollections for each type of user data
+ * (e.g., /subjects, /studySessions). This ensures that all documents within a given collection
+ * share the same security context, simplifying rules and client-side queries.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ------------------------------------------------------------------------
+    // Helper Functions
+    // ------------------------------------------------------------------------
+
+    /**
+     * Checks if a user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the currently authenticated user's UID matches the given userId.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Checks if the user is the owner of an EXISTING document.
+     * Crucial for preventing updates or deletes on non-existent documents.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * Validates that a new user document has its internal 'id' field
+     * set to the user's UID, ensuring relational integrity.
+     */
+    function isCreatingOwnValidUserDocument(userId) {
+      return isOwner(userId) && request.resource.data.id == userId;
+    }
+
+    /**
+     * Validates that the 'id' field of a user document is immutable upon update.
+     */
+    function isUpdatingOwnValidUserDocument() {
+      return request.resource.data.id == resource.data.id;
+    }
+
+    /**
+     * Validates that a new subcollection document (e.g., subject, flower)
+     * has its internal 'userId' field correctly set to the owner's UID.
+     */
+    function isCreatingOwnValidSubdocument(userId) {
+      return isOwner(userId) && request.resource.data.userId == userId;
+    }
+
+    /**
+     * Validates that the 'userId' field of a subcollection document is immutable upon update.
+     */
+    function isUpdatingOwnValidSubdocument() {
+      return request.resource.data.userId == resource.data.userId;
+    }
+
+    // ------------------------------------------------------------------------
+    // Collection Rules
+    // ------------------------------------------------------------------------
+
+    /**
+     * @description Manages user profile documents.
+     * @path /users/{userId}
+     * @allow (get) An authenticated user can read their own profile.
+     * @allow (create) An authenticated user can create their own profile document.
+     * @deny (list) No user can list all documents in the /users collection.
+     * @deny (get) A user cannot read another user's profile.
+     * @principle Restricts access to a user's own data tree and enforces self-creation.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isCreatingOwnValidUserDocument(userId);
+      allow update: if isExistingOwner(userId) && isUpdatingOwnValidUserDocument();
+      allow delete: if isExistingOwner(userId);
+
+      /**
+       * @description Manages the subjects a user creates for study.
+       * @path /users/{userId}/subjects/{subjectId}
+       * @allow (create) An authenticated user can create a new subject for themselves.
+       * @allow (list) An authenticated user can list all of their own subjects.
+       * @deny (create) A user cannot create a subject for another user.
+       * @deny (get) A user cannot read another user's subjects.
+       * @principle Enforces strict ownership for all operations within a user's private subcollection.
+       */
+      match /subjects/{subjectId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isCreatingOwnValidSubdocument(userId);
+        allow update: if isExistingOwner(userId) && isUpdatingOwnValidSubdocument();
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Manages a user's individual study sessions.
+       * @path /users/{userId}/studySessions/{studySessionId}
+       * @allow (create) An authenticated user can create a study session for themselves.
+       * @allow (list) An authenticated user can list all of their own study sessions.
+       * @deny (create) A user cannot create a study session for another user.
+       * @deny (get) A user cannot read another user's study sessions.
+       * @principle Enforces strict ownership for all operations within a user's private subcollection.
+       */
+      match /studySessions/{studySessionId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isCreatingOwnValidSubdocument(userId);
+        allow update: if isExistingOwner(userId) && isUpdatingOwnValidSubdocument();
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Manages the flowers in a user's virtual garden.
+       * @path /users/{userId}/flowers/{flowerId}
+       * @allow (create) An authenticated user can create a flower for themselves.
+       * @allow (list) An authenticated user can list all of their own flowers.
+       * @deny (create) A user cannot create a flower for another user.
+       * @deny (get) A user cannot read another user's flowers.
+       * @principle Enforces strict ownership for all operations within a user's private subcollection.
+       */
+      match /flowers/{flowerId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isCreatingOwnValidSubdocument(userId);
+        allow update: if isExistingOwner(userId) && isUpdatingOwnValidSubdocument();
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Manages the achievements a user has earned.
+       * @path /users/{userId}/userAchievements/{userAchievementId}
+       * @allow (create) An authenticated user can create a userAchievement for themselves.
+       * @allow (list) An authenticated user can list all of their own userAchievements.
+       * @deny (create) A user cannot create a userAchievement for another user.
+       * @deny (get) A user cannot read another user's userAchievements.
+       * @principle Enforces strict ownership for all operations within a user's private subcollection.
+       */
+      match /userAchievements/{userAchievementId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isCreatingOwnValidSubdocument(userId);
+        allow update: if isExistingOwner(userId) && isUpdatingOwnValidSubdocument();
+        allow delete: if isExistingOwner(userId);
+      }
+    }
+  }
+}

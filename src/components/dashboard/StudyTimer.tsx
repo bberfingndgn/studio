@@ -4,7 +4,14 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Play, Pause, RotateCcw } from 'lucide-react';
-import { STUDY_SESSION_DURATION_MINUTES } from '@/lib/constants';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 
 type TimerStatus = 'running' | 'paused' | 'stopped';
 
@@ -13,10 +20,20 @@ interface StudyTimerProps {
   onStatusChange: (status: TimerStatus) => void;
 }
 
+const DURATION_OPTIONS = [15, 25, 45, 60];
+const DEFAULT_DURATION = 25;
+
 export function StudyTimer({ onSessionComplete, onStatusChange }: StudyTimerProps) {
-  const sessionDurationSeconds = useMemo(() => STUDY_SESSION_DURATION_MINUTES * 60, []);
+  const [durationInMinutes, setDurationInMinutes] = useState(DEFAULT_DURATION);
+  const sessionDurationSeconds = useMemo(() => durationInMinutes * 60, [durationInMinutes]);
   const [secondsLeft, setSecondsLeft] = useState(sessionDurationSeconds);
   const [status, setStatus] = useState<TimerStatus>('stopped');
+
+  useEffect(() => {
+    // When duration changes, reset the timer
+    setSecondsLeft(sessionDurationSeconds);
+    setStatus('stopped');
+  }, [sessionDurationSeconds]);
 
   useEffect(() => {
     onStatusChange(status);
@@ -52,6 +69,10 @@ export function StudyTimer({ onSessionComplete, onStatusChange }: StudyTimerProp
     setStatus('stopped');
     setSecondsLeft(sessionDurationSeconds);
   };
+  
+  const handleDurationChange = (value: string) => {
+    setDurationInMinutes(Number(value));
+  }
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -92,10 +113,30 @@ export function StudyTimer({ onSessionComplete, onStatusChange }: StudyTimerProp
               }}
             />
           </svg>
-          <div className="absolute inset-0 flex items-center justify-center">
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-5xl sm:text-6xl font-bold font-headline text-foreground tabular-nums">
               {formatTime(secondsLeft)}
             </span>
+             {status !== 'running' && (
+              <div className="w-40 mt-4">
+                <Select
+                  value={String(durationInMinutes)}
+                  onValueChange={handleDurationChange}
+                  disabled={status === 'running' || status === 'paused'}
+                >
+                  <SelectTrigger className="text-sm">
+                    <SelectValue placeholder="Session duration" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DURATION_OPTIONS.map(option => (
+                      <SelectItem key={option} value={String(option)}>
+                        {option} minutes
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
         </div>
         

@@ -27,6 +27,7 @@ export default function Home() {
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<{totalStudyTime: number}>(userProfileRef);
 
   const [timerStatus, setTimerStatus] = useState<TimerStatus>('stopped');
+  const [selectedSubject, setSelectedSubject] = useState('Mathematics');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -113,10 +114,12 @@ export default function Home() {
 
         {/* Center Column: Flower & Timer */}
         <div className="lg:col-span-2 xl:col-span-3 flex flex-col items-center justify-center gap-8 order-1 lg:order-2">
-          <Flower progress={flowerProgress} />
+          <Flower progress={flowerProgress} subject={selectedSubject} />
           <StudyTimer 
             onSessionComplete={handleSessionComplete}
             onStatusChange={handleStatusChange}
+            subject={selectedSubject}
+            onSubjectChange={setSelectedSubject}
           />
         </div>
         

@@ -18,16 +18,16 @@ type TimerStatus = 'running' | 'paused' | 'stopped';
 interface StudyTimerProps {
   onSessionComplete: (durationInSeconds: number, subject: string) => void;
   onStatusChange: (status: TimerStatus) => void;
+  subject: string;
+  onSubjectChange: (subject: string) => void;
 }
 
 const DURATION_OPTIONS = [15, 25, 45, 60];
 const DEFAULT_DURATION = 25;
 const SUBJECT_OPTIONS = ["Mathematics", "Science", "Social Studies", "English"];
-const DEFAULT_SUBJECT = "Mathematics";
 
-export function StudyTimer({ onSessionComplete, onStatusChange }: StudyTimerProps) {
+export function StudyTimer({ onSessionComplete, onStatusChange, subject, onSubjectChange }: StudyTimerProps) {
   const [durationInMinutes, setDurationInMinutes] = useState(DEFAULT_DURATION);
-  const [subject, setSubject] = useState(DEFAULT_SUBJECT);
   const sessionDurationSeconds = useMemo(() => durationInMinutes * 60, [durationInMinutes]);
   const [secondsLeft, setSecondsLeft] = useState(sessionDurationSeconds);
   const [status, setStatus] = useState<TimerStatus>('stopped');
@@ -78,7 +78,7 @@ export function StudyTimer({ onSessionComplete, onStatusChange }: StudyTimerProp
   }
   
   const handleSubjectChange = (value: string) => {
-    setSubject(value);
+    onSubjectChange(value);
   }
 
   const formatTime = (seconds: number) => {

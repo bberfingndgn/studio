@@ -8,9 +8,9 @@ import { UpcomingAchievements } from '@/components/dashboard/UpcomingAchievement
 import { SECONDS_TO_GROW_FLOWER, USER_NAME } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import { achievements } from '@/lib/data';
-import { useFirebase, useUser, useDoc, useMemoFirebase } from '@/firebase';
+import { useFirebase, useUser, useDoc, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, collection } from 'firebase/firestore';
 
 type TimerStatus = 'running' | 'paused' | 'stopped';
 
@@ -38,11 +38,23 @@ export default function Home() {
   const totalStudyTime = userProfile?.totalStudyTime ?? 0;
   const flowerProgress = (totalStudyTime % SECONDS_TO_GROW_FLOWER) / SECONDS_TO_GROW_FLOWER * 100;
 
-  const handleSessionComplete = useCallback(async (sessionDuration: number) => {
-    if (!user || !userProfileRef) return;
+  const handleSessionComplete = useCallback(async (sessionDuration: number, subject: string) => {
+    if (!user || !userProfileRef || !firestore) return;
 
     const newTotalStudyTime = totalStudyTime + sessionDuration;
+    
+    const now = new Date();
+    const startTime = new Date(now.getTime() - sessionDuration * 1000);
 
+    const studySessionRef = collection(firestore, 'users', user.uid, 'studySessions');
+    addDocumentNonBlocking(studySessionRef, {
+      userId: user.uid,
+      subjectId: subject, // Using subject name as ID for simplicity
+      startTime: startTime.toISOString(),
+      endTime: now.toISOString(),
+      duration: sessionDuration / 60, // duration in minutes
+    });
+    
     // This is a non-blocking update
     setDoc(userProfileRef, { totalStudyTime: newTotalStudyTime }, { merge: true });
     
@@ -66,7 +78,7 @@ export default function Home() {
       }
     });
 
-  }, [totalStudyTime, user, userProfileRef, toast]);
+  }, [totalStudyTime, user, userProfileRef, toast, firestore]);
 
   const handleStatusChange = (status: TimerStatus) => {
     setTimerStatus(status);

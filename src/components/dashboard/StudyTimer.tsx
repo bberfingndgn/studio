@@ -16,15 +16,18 @@ import { Label } from '@/components/ui/label';
 type TimerStatus = 'running' | 'paused' | 'stopped';
 
 interface StudyTimerProps {
-  onSessionComplete: (durationInSeconds: number) => void;
+  onSessionComplete: (durationInSeconds: number, subject: string) => void;
   onStatusChange: (status: TimerStatus) => void;
 }
 
 const DURATION_OPTIONS = [15, 25, 45, 60];
 const DEFAULT_DURATION = 25;
+const SUBJECT_OPTIONS = ["Mathematics", "Science", "Social Studies", "English"];
+const DEFAULT_SUBJECT = "Mathematics";
 
 export function StudyTimer({ onSessionComplete, onStatusChange }: StudyTimerProps) {
   const [durationInMinutes, setDurationInMinutes] = useState(DEFAULT_DURATION);
+  const [subject, setSubject] = useState(DEFAULT_SUBJECT);
   const sessionDurationSeconds = useMemo(() => durationInMinutes * 60, [durationInMinutes]);
   const [secondsLeft, setSecondsLeft] = useState(sessionDurationSeconds);
   const [status, setStatus] = useState<TimerStatus>('stopped');
@@ -44,7 +47,7 @@ export function StudyTimer({ onSessionComplete, onStatusChange }: StudyTimerProp
         setSecondsLeft(prev => prev - 1);
       }, 1000);
     } else if (status === 'running' && secondsLeft === 0) {
-      onSessionComplete(sessionDurationSeconds);
+      onSessionComplete(sessionDurationSeconds, subject);
       setStatus('stopped');
       setSecondsLeft(sessionDurationSeconds);
       // Optionally play a sound here
@@ -55,7 +58,7 @@ export function StudyTimer({ onSessionComplete, onStatusChange }: StudyTimerProp
         clearInterval(interval);
       }
     };
-  }, [status, secondsLeft, onStatusChange, onSessionComplete, sessionDurationSeconds]);
+  }, [status, secondsLeft, onStatusChange, onSessionComplete, sessionDurationSeconds, subject]);
 
   const handleStartPause = () => {
     if (status === 'running') {
@@ -72,6 +75,10 @@ export function StudyTimer({ onSessionComplete, onStatusChange }: StudyTimerProp
   
   const handleDurationChange = (value: string) => {
     setDurationInMinutes(Number(value));
+  }
+  
+  const handleSubjectChange = (value: string) => {
+    setSubject(value);
   }
 
   const formatTime = (seconds: number) => {
@@ -118,7 +125,23 @@ export function StudyTimer({ onSessionComplete, onStatusChange }: StudyTimerProp
               {formatTime(secondsLeft)}
             </span>
              {status !== 'running' && (
-              <div className="w-40 mt-4">
+              <div className="w-40 mt-4 space-y-2">
+                 <Select
+                  value={subject}
+                  onValueChange={handleSubjectChange}
+                  disabled={status === 'running' || status === 'paused'}
+                >
+                  <SelectTrigger className="text-sm">
+                    <SelectValue placeholder="Select Subject" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SUBJECT_OPTIONS.map(option => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Select
                   value={String(durationInMinutes)}
                   onValueChange={handleDurationChange}

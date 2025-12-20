@@ -9,14 +9,15 @@ import { UpcomingAchievements } from '@/components/dashboard/UpcomingAchievement
 import { SECONDS_TO_GROW_FLOWER, USER_NAME } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import { achievements } from '@/lib/data';
-import { useFirebase, useUser, useDoc, useCollection, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
+import { useFirebase, useUser, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { doc, collection } from 'firebase/firestore';
+import { doc, collection, setDoc, addDoc, updateDoc } from 'firebase/firestore';
 import { GrownFlowerCard } from '@/components/garden/GrownFlowerCard';
 import type { GrownFlower, StudySession, UserProfile } from '@/lib/types';
 import { placeholderImages } from '@/lib/placeholder-images';
 import type { ImagePlaceholder } from '@/lib/placeholder-images';
 import { LoaderCircle } from 'lucide-react';
+import { addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 type TimerStatus = 'running' | 'paused' | 'stopped';
 
@@ -203,7 +204,6 @@ export default function Home() {
         </div>
 
         <div className="lg:col-span-2 xl:col-span-3 flex flex-col items-center justify-center gap-8 order-1 lg:order-2">
-          <Flower progress={flowerProgress} subject={selectedSubject} />
           <StudyTimer 
             onSessionComplete={handleSessionComplete}
             onStatusChange={handleStatusChange}
@@ -211,6 +211,7 @@ export default function Home() {
             subject={selectedSubject}
             onSubjectChange={setSelectedSubject}
           />
+          <Flower progress={flowerProgress} subject={selectedSubject} />
         </div>
         
         <div className="lg:col-span-1 xl:col-span-1 w-full order-3 lg:order-3">

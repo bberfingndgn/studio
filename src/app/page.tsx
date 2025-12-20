@@ -21,8 +21,8 @@ import { LoaderCircle } from 'lucide-react';
 type TimerStatus = 'running' | 'paused' | 'stopped';
 
 const subjectToFlowerType: Record<string, string> = {
-  "Mathematics": "rose",
-  "Science": "sunflower",
+  "Mathematics": "sunflower",
+  "Science": "rose",
   "Social Studies": "tulip",
   "English": "daisy",
 };

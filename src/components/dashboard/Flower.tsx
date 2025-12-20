@@ -5,14 +5,6 @@ interface FlowerProps {
 
 const subjectStyles: Record<string, Record<string, string>> = {
   "Mathematics": {
-    stem: "#6A8A82",
-    leaf: "#6A8A82",
-    bud: "#3B82F6",
-    petal: "#60A5FA",
-    petalAccent: "#3B82F6",
-    center: "#022c22",
-  },
-  "Science": {
     stem: "#2E7D32", // Dark green
     leaf: "#4CAF50", // Lighter green
     petal: "#FFC107", // Amber
@@ -20,6 +12,14 @@ const subjectStyles: Record<string, Record<string, string>> = {
     center: "#795548", // Brown
     ground: "#A1662F",
     bulb: "#D2B48C"
+  },
+  "Science": {
+    stem: "#6A8A82",
+    leaf: "#6A8A82",
+    bud: "#3B82F6",
+    petal: "#60A5FA",
+    petalAccent: "#3B82F6",
+    center: "#022c22",
   },
   "Social Studies": {
     stem: "#5C6B73",
@@ -50,7 +50,7 @@ const DefaultStyle = {
 }
 
 const PetalShapes: Record<string, React.FC<{ style: typeof DefaultStyle }>> = {
-  "Mathematics": ({ style }) => (
+  "Science": ({ style }) => (
     <>
       <path d="M100 45 C 90 20, 110 20, 100 45" transform="rotate(0 100 45)" fill={style.petal} />
       <path d="M100 45 C 90 20, 110 20, 100 45" transform="rotate(45 100 45)" fill={style.petal} />
@@ -62,7 +62,7 @@ const PetalShapes: Record<string, React.FC<{ style: typeof DefaultStyle }>> = {
       <path d="M100 45 C 90 20, 110 20, 100 45" transform="rotate(315 100 45)" fill={style.petalAccent} />
     </>
   ),
-  "Science": ({ style }) => (
+  "Mathematics": ({ style }) => (
     <>
       {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => (
         <path 

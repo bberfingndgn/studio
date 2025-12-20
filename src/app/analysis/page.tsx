@@ -18,22 +18,31 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
+const MOCK_SESSIONS: StudySession[] = [
+    {
+        id: 'mock-1',
+        userId: 'mock-user',
+        subjectId: 'Mathematics',
+        startTime: new Date().toISOString(),
+        endTime: new Date().toISOString(),
+        duration: 60, // 60 minutes for Mathematics
+    }
+];
+
 export default function AnalysisPage() {
   const { user, isUserLoading } = useUser();
-  const { firestore } = useFirebase();
   const router = useRouter();
 
+  // This will still run to guide non-logged-in users away, but we won't use the fetched data for now.
   useEffect(() => {
     if (!isUserLoading && !user) {
       router.push('/login');
     }
   }, [user, isUserLoading, router]);
 
-  const studySessionsRef = useMemoFirebase(
-    () => (user ? collection(firestore, 'users', user.uid, 'studySessions') : null),
-    [firestore, user]
-  );
-  const { data: studySessions, isLoading: isSessionsLoading } = useCollection<StudySession>(studySessionsRef);
+  const studySessions = MOCK_SESSIONS;
+  const isSessionsLoading = false;
+
 
   const chartData = useMemo(() => {
     if (!studySessions) return [];

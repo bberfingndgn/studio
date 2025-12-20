@@ -1,6 +1,5 @@
 import { type Achievement } from '@/lib/types';
 import { Timer, Zap, Sun, Award, Mountain, Heart, MousePointerClick, Star } from 'lucide-react';
-import { placeholderImages } from './placeholder-images';
 
 export const achievements: Achievement[] = [
   {

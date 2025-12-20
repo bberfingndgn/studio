@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -18,6 +19,7 @@ type TimerStatus = 'running' | 'paused' | 'stopped';
 interface StudyTimerProps {
   onSessionComplete: (durationInSeconds: number, subject: string) => void;
   onStatusChange: (status: TimerStatus) => void;
+  onProgressChange: (progress: number) => void;
   subject: string;
   onSubjectChange: (subject: string) => void;
 }
@@ -26,7 +28,7 @@ const DURATION_OPTIONS = [15, 25, 45, 60];
 const DEFAULT_DURATION = 25;
 const SUBJECT_OPTIONS = ["Mathematics", "Science", "Social Studies", "English"];
 
-export function StudyTimer({ onSessionComplete, onStatusChange, subject, onSubjectChange }: StudyTimerProps) {
+export function StudyTimer({ onSessionComplete, onStatusChange, onProgressChange, subject, onSubjectChange }: StudyTimerProps) {
   const [durationInMinutes, setDurationInMinutes] = useState(DEFAULT_DURATION);
   const sessionDurationSeconds = useMemo(() => durationInMinutes * 60, [durationInMinutes]);
   const [secondsLeft, setSecondsLeft] = useState(sessionDurationSeconds);
@@ -44,12 +46,18 @@ export function StudyTimer({ onSessionComplete, onStatusChange, subject, onSubje
     
     if (status === 'running' && secondsLeft > 0) {
       interval = setInterval(() => {
-        setSecondsLeft(prev => prev - 1);
+        setSecondsLeft(prev => {
+            const newSecondsLeft = prev - 1;
+            const progress = ((sessionDurationSeconds - newSecondsLeft) / sessionDurationSeconds) * 100;
+            onProgressChange(progress);
+            return newSecondsLeft;
+        });
       }, 1000);
     } else if (status === 'running' && secondsLeft === 0) {
       onSessionComplete(sessionDurationSeconds, subject);
       setStatus('stopped');
       setSecondsLeft(sessionDurationSeconds);
+      onProgressChange(0);
       // Optionally play a sound here
     }
 
@@ -58,7 +66,7 @@ export function StudyTimer({ onSessionComplete, onStatusChange, subject, onSubje
         clearInterval(interval);
       }
     };
-  }, [status, secondsLeft, onStatusChange, onSessionComplete, sessionDurationSeconds, subject]);
+  }, [status, secondsLeft, onStatusChange, onSessionComplete, sessionDurationSeconds, subject, onProgressChange]);
 
   const handleStartPause = () => {
     if (status === 'running') {
@@ -71,6 +79,7 @@ export function StudyTimer({ onSessionComplete, onStatusChange, subject, onSubje
   const handleReset = () => {
     setStatus('stopped');
     setSecondsLeft(sessionDurationSeconds);
+    onProgressChange(0);
   };
   
   const handleDurationChange = (value: string) => {

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -48,6 +49,8 @@ export default function Home() {
   const [selectedSubject, setSelectedSubject] = useState('Mathematics');
   const { toast } = useToast();
   
+  const [sessionProgress, setSessionProgress] = useState(0);
+
   const flowerDataMap = useMemo(() => placeholderImages.reduce((acc, img) => {
     acc[img.id] = img;
     return acc;
@@ -60,7 +63,6 @@ export default function Home() {
   }, [user, isUserLoading, router]);
 
   const totalStudyTime = userProfile?.totalStudyTime ?? 0;
-  const flowerProgress = (totalStudyTime % SECONDS_TO_GROW_FLOWER) / SECONDS_TO_GROW_FLOWER * 100;
   
   const grownFlowers: GrownFlower[] = useMemo(() => {
     if (!studySessions) return [];
@@ -133,12 +135,21 @@ export default function Home() {
       }
     });
 
+    setSessionProgress(0); // Reset progress on complete
+
   }, [totalStudyTime, user, userProfileRef, toast, firestore]);
 
   const handleStatusChange = (status: TimerStatus) => {
     setTimerStatus(status);
+     if (status === 'stopped' || status === 'paused') {
+      setSessionProgress(0); // Reset progress if stopped or paused
+    }
   };
   
+  const handleProgressChange = (progress: number) => {
+    setSessionProgress(progress);
+  };
+
   if (isUserLoading || isProfileLoading || isSessionsLoading) {
       return (
           <div className="flex items-center justify-center flex-1">
@@ -150,6 +161,10 @@ export default function Home() {
   if (!user) {
       return null;
   }
+
+  const flowerProgress = status === 'running' || status === 'paused' 
+    ? sessionProgress 
+    : (totalStudyTime % SECONDS_TO_GROW_FLOWER) / SECONDS_TO_GROW_FLOWER * 100;
 
   return (
     <div className="flex-1 container mx-auto p-4 md:p-8">
@@ -168,6 +183,7 @@ export default function Home() {
           <StudyTimer 
             onSessionComplete={handleSessionComplete}
             onStatusChange={handleStatusChange}
+            onProgressChange={handleProgressChange}
             subject={selectedSubject}
             onSubjectChange={setSelectedSubject}
           />

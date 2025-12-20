@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -25,13 +26,7 @@ const subjectColors: Record<string, string> = {
 }
 
 export function GrownFlowerCard({ flower, flowerData }: GrownFlowerCardProps) {
-  const [formattedDate, setFormattedDate] = useState<string | null>(null);
-
-  useEffect(() => {
-    // This ensures that the date formatting only runs on the client-side,
-    // after the initial hydration, preventing a mismatch with the server-rendered HTML.
-    setFormattedDate(flower.grownAt.toLocaleDateString());
-  }, [flower.grownAt]);
+  const formattedDate = flower.grownAt.toLocaleDateString();
 
   return (
     <Link href={`/subjects/${encodeURIComponent(flower.subject)}`} className="block group">
@@ -57,11 +52,7 @@ export function GrownFlowerCard({ flower, flowerData }: GrownFlowerCardProps) {
             </div>
             <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
               <Calendar className="w-3.5 h-3.5" />
-              {formattedDate ? (
-                  <span>Grown on {formattedDate}</span>
-              ) : (
-                <Skeleton className="h-4 w-24" />
-              )}
+              <span>Grown on {formattedDate}</span>
             </div>
           </div>
         </CardContent>

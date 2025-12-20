@@ -18,6 +18,8 @@ const subjectStyles: Record<string, Record<string, string>> = {
     petal: "#FFC107", // Amber
     petalAccent: "#FFA000", // Orange
     center: "#795548", // Brown
+    ground: "#A1662F",
+    bulb: "#D2B48C"
   },
   "Social Studies": {
     stem: "#5C6B73",
@@ -43,6 +45,8 @@ const DefaultStyle = {
   petal: "#FFC107",
   petalAccent: "#FFA000",
   center: "#795548",
+  ground: "#A1662F",
+  bulb: "#D2B48C"
 }
 
 const PetalShapes: Record<string, React.FC<{ style: typeof DefaultStyle }>> = {
@@ -99,28 +103,38 @@ export function Flower({ progress, subject }: FlowerProps) {
 
   const rootScale = getScale(0, 20);
   const stemScale = getScale(15, 50);
+  const sproutLeafScale = getScale(20, 40);
   const leaf1Scale = getScale(30, 60);
   const leaf2Scale = getScale(40, 70);
   const budScale = getScale(65, 85);
   const petalScale = getScale(80, 100);
 
+  // Hide sprout leaves once real leaves grow
+  const sproutOpacity = progress > 50 ? 1 - getScale(50, 60) : 1;
+
   return (
     <div className="w-64 h-64 md:w-80 md:h-80 flex items-center justify-center" aria-label={`Flower growth progress: ${Math.round(progress)}%`}>
       <svg viewBox="0 0 200 200" className="w-full h-full">
         {/* Ground */}
-        <path d="M-10 130 C 50 120, 150 140, 210 130 L 210 210 L -10 210 Z" fill="#8B4513" opacity={getOpacity(0)} />
+        <path d="M0 130 H200 V200 H0 Z" fill={style.ground} opacity={getOpacity(0)} />
 
         {/* Bulb/Roots */}
         <g style={{ transformOrigin: 'top center', transform: `scale(${rootScale})`, transition: 'transform 1s ease-out' }} opacity={getOpacity(5)}>
-             <path d="M100 135 C 90 150, 90 160, 100 170 C 110 160, 110 150, 100 135 Z" fill="#A0522D" stroke="#653424" strokeWidth="2"/>
+             <path d="M100 135 C 90 150, 90 160, 100 170 C 110 160, 110 150, 100 135 Z" fill={style.bulb} stroke="#653424" strokeWidth="1"/>
         </g>
         
         {/* Stem */}
         <g style={{ transformOrigin: 'bottom center', transform: `scaleY(${stemScale})`, transition: 'transform 1s ease-out' }}>
-          <path d="M98 135 Q 98 90, 100 45 L 102 45 Q 102 90, 102 135 Z" fill={style.stem} stroke="#000" strokeWidth="0.5"/>
+          <path d="M98 130 Q 98 90, 100 45 L 102 45 Q 102 90, 102 130 Z" fill={style.stem} stroke="#000" strokeWidth="0.5"/>
         </g>
         
-        {/* Leaves */}
+        {/* Initial Sprout Leaves */}
+        <g style={{ transformOrigin: '100px 130px', transform: `scale(${sproutLeafScale})`, transition: 'transform 1s ease-out', opacity: sproutOpacity }} opacity={getOpacity(20)}>
+           <path d="M100 130 C 90 120, 90 110, 100 115" fill={style.leaf} transform="rotate(-15 100 130)" />
+           <path d="M100 130 C 110 120, 110 110, 100 115" fill={style.leaf} transform="rotate(15 100 130)" />
+        </g>
+
+        {/* Mature Leaves */}
         <g style={{ transformOrigin: '100px 110px', transform: `scale(${leaf1Scale}) rotate(-15deg)`, transition: 'transform 1s ease-out' }} opacity={getOpacity(30)}>
           <path d="M100 110 C 60 110, 70 80, 100 90" fill={style.leaf} stroke="#2E7D32" strokeWidth="1" />
         </g>

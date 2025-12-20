@@ -1,4 +1,4 @@
-import { type Achievement, type GrownFlower } from '@/lib/types';
+import { type Achievement } from '@/lib/types';
 import { Timer, Zap, Sun, Award, Mountain } from 'lucide-react';
 import { placeholderImages } from './placeholder-images';
 
@@ -42,23 +42,5 @@ export const achievements: Achievement[] = [
     milestoneHours: 4, 
     unlocked: true,
     Icon: Mountain,
-  },
-];
-
-export const grownFlowers: GrownFlower[] = [
-  {
-    id: 'flower-1',
-    flowerTypeId: placeholderImages[0].id,
-    grownAt: new Date('2024-05-20T10:00:00Z'),
-  },
-  {
-    id: 'flower-2',
-    flowerTypeId: placeholderImages[1].id,
-    grownAt: new Date('2024-05-22T14:30:00Z'),
-  },
-  {
-    id: 'flower-3',
-    flowerTypeId: placeholderImages[2].id,
-    grownAt: new Date('2024-05-25T09:00:00Z'),
   },
 ];

@@ -10,13 +10,14 @@ const subjectStyles: Record<string, Record<string, string>> = {
     bud: "#3B82F6",
     petal: "#60A5FA",
     petalAccent: "#3B82F6",
+    center: "#022c22",
   },
   "Science": {
-    stem: "#706c3a",
-    leaf: "#706c3a",
-    bud: "#7E57C2",
-    petal: "#9575CD",
-    petalAccent: "#7E57C2",
+    stem: "#2E7D32", // Dark green
+    leaf: "#4CAF50", // Lighter green
+    petal: "#FFC107", // Amber
+    petalAccent: "#FFA000", // Orange
+    center: "#795548", // Brown
   },
   "Social Studies": {
     stem: "#5C6B73",
@@ -24,39 +25,49 @@ const subjectStyles: Record<string, Record<string, string>> = {
     bud: "#EC4899",
     petal: "#F472B6",
     petalAccent: "#EC4899",
+    center: "#831843",
   },
   "English": {
     stem: "#8a6c3a",
     leaf: "#8a6c3a",
     bud: "#FBBF24",
-    petal: "#FCD34D",
-    petalAccent: "#FBBF24",
+    petal: "#ffffff",
+    petalAccent: "#FCD34D",
+    center: "#FBBF24",
   }
 }
 
 const DefaultStyle = {
-  stem: "#706c3a",
-  leaf: "#706c3a",
-  bud: "#E53B89",
-  petal: "#E53B89",
-  petalAccent: "#D12F7A",
+  stem: "#2E7D32",
+  leaf: "#4CAF50",
+  petal: "#FFC107",
+  petalAccent: "#FFA000",
+  center: "#795548",
 }
 
 const PetalShapes: Record<string, React.FC<{ style: typeof DefaultStyle }>> = {
   "Mathematics": ({ style }) => (
     <>
-      <path d="M100 35 L85 40 C 90 20, 110 20, 115 40 Z" fill={style.petal} />
-      <path d="M100 35 L88 38 C 90 25, 100 20, 100 35 Z" fill={style.petalAccent} />
-      <path d="M100 35 L112 38 C 110 25, 100 20, 100 35 Z" fill={style.petalAccent} />
+      <path d="M100 45 C 90 20, 110 20, 100 45" transform="rotate(0 100 45)" fill={style.petal} />
+      <path d="M100 45 C 90 20, 110 20, 100 45" transform="rotate(45 100 45)" fill={style.petal} />
+      <path d="M100 45 C 90 20, 110 20, 100 45" transform="rotate(90 100 45)" fill={style.petalAccent} />
+      <path d="M100 45 C 90 20, 110 20, 100 45" transform="rotate(135 100 45)" fill={style.petal} />
+      <path d="M100 45 C 90 20, 110 20, 100 45" transform="rotate(180 100 45)" fill={style.petal} />
+      <path d="M100 45 C 90 20, 110 20, 100 45" transform="rotate(225 100 45)" fill={style.petalAccent} />
+      <path d="M100 45 C 90 20, 110 20, 100 45" transform="rotate(270 100 45)" fill={style.petal} />
+      <path d="M100 45 C 90 20, 110 20, 100 45" transform="rotate(315 100 45)" fill={style.petalAccent} />
     </>
   ),
   "Science": ({ style }) => (
     <>
-      <circle cx="100" cy="25" r="15" fill={style.petal} />
-      <circle cx="85" cy="40" r="15" fill={style.petal} />
-      <circle cx="115" cy="40" r="15" fill={style.petal} />
-      <circle cx="90" cy="55" r="15" fill={style.petalAccent} />
-      <circle cx="110" cy="55" r="15" fill={style.petalAccent} />
+      {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => (
+        <path 
+          key={angle}
+          d="M100,45 C 90,20 110,20 100,45" 
+          fill={i % 2 === 0 ? style.petal : style.petalAccent}
+          transform={`rotate(${angle} 100 45) scale(1.2)`} 
+        />
+      ))}
     </>
   ),
   "Social Studies": ({ style }) => (
@@ -67,8 +78,8 @@ const PetalShapes: Record<string, React.FC<{ style: typeof DefaultStyle }>> = {
   ),
   "English": ({ style }) => (
     <>
-      {[0, 60, 120, 180, 240, 300].map(angle => (
-        <path key={angle} transform={`rotate(${angle} 100 45)`} d="M100 45 C 90 20, 110 20, 100 45" fill={style.petal} />
+      {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map(angle => (
+        <ellipse key={angle} cx="100" cy="25" rx="8" ry="15" fill={style.petal} transform={`rotate(${angle} 100 45)`} />
       ))}
     </>
   ),
@@ -84,7 +95,7 @@ export function Flower({ progress, subject }: FlowerProps) {
   };
   
   const style = subjectStyles[subject] || DefaultStyle;
-  const PetalComponent = PetalShapes[subject] || PetalShapes["Mathematics"];
+  const PetalComponent = PetalShapes[subject] || PetalShapes["Science"];
 
   const rootScale = getScale(0, 20);
   const stemScale = getScale(15, 50);
@@ -96,45 +107,50 @@ export function Flower({ progress, subject }: FlowerProps) {
   return (
     <div className="w-64 h-64 md:w-80 md:h-80 flex items-center justify-center" aria-label={`Flower growth progress: ${Math.round(progress)}%`}>
       <svg viewBox="0 0 200 200" className="w-full h-full">
-        {/* Roots */}
+        {/* Ground */}
+        <path d="M-10 130 C 50 120, 150 140, 210 130 L 210 210 L -10 210 Z" fill="#8B4513" opacity={getOpacity(0)} />
+
+        {/* Bulb/Roots */}
         <g style={{ transformOrigin: 'top center', transform: `scale(${rootScale})`, transition: 'transform 1s ease-out' }} opacity={getOpacity(5)}>
-            <path d="M100 130 Q90 140 85 150" stroke={style.stem} fill="none" strokeWidth="3" strokeLinecap="round" />
-            <path d="M100 130 Q110 140 115 150" stroke={style.stem} fill="none" strokeWidth="3" strokeLinecap="round" />
-            <path d="M95 135 Q85 150 80 160" stroke={style.stem} fill="none" strokeWidth="2" strokeLinecap="round" />
-            <path d="M105 135 Q115 150 120 160" stroke={style.stem} fill="none" strokeWidth="2" strokeLinecap="round" />
-            <path d="M100 130 Q95 145 90 155" stroke={style.stem} fill="none" strokeWidth="2.5" strokeLinecap="round" />
-            <path d="M100 130 Q105 145 110 155" stroke={style.stem} fill="none" strokeWidth="2.5" strokeLinecap="round" />
+             <path d="M100 135 C 90 150, 90 160, 100 170 C 110 160, 110 150, 100 135 Z" fill="#A0522D" stroke="#653424" strokeWidth="2"/>
         </g>
         
         {/* Stem */}
         <g style={{ transformOrigin: 'bottom center', transform: `scaleY(${stemScale})`, transition: 'transform 1s ease-out' }}>
-          <path d="M100 130 C 102 100, 98 70, 100 40" stroke={style.stem} fill="none" strokeWidth="5" strokeLinecap="round" />
+          <path d="M98 135 Q 98 90, 100 45 L 102 45 Q 102 90, 102 135 Z" fill={style.stem} stroke="#000" strokeWidth="0.5"/>
         </g>
         
         {/* Leaves */}
-        <g style={{ transformOrigin: 'bottom left', transform: `scale(${leaf1Scale})`, transition: 'transform 1s ease-out' }} opacity={getOpacity(30)}>
-          <path d="M100 100 C 80 95, 85 70, 100 80" fill={style.leaf} />
+        <g style={{ transformOrigin: '100px 110px', transform: `scale(${leaf1Scale}) rotate(-15deg)`, transition: 'transform 1s ease-out' }} opacity={getOpacity(30)}>
+          <path d="M100 110 C 60 110, 70 80, 100 90" fill={style.leaf} stroke="#2E7D32" strokeWidth="1" />
         </g>
-        <g style={{ transformOrigin: 'bottom right', transform: `scale(${leaf2Scale})`, transition: 'transform 1s ease-out' }} opacity={getOpacity(40)}>
-          <path d="M100 90 C 120 85, 115 60, 100 70" fill={style.leaf} />
+        <g style={{ transformOrigin: '100px 100px', transform: `scale(${leaf2Scale}) rotate(15deg)`, transition: 'transform 1s ease-out' }} opacity={getOpacity(40)}>
+          <path d="M100 100 C 140 100, 130 70, 100 80" fill={style.leaf} stroke="#2E7D32" strokeWidth="1" />
         </g>
         
         {/* Bud/Center */}
         <g style={{ transformOrigin: 'center', transform: `scale(${budScale})`, transition: 'transform 1s ease-out' }} opacity={getOpacity(65)}>
-            <path d="M90 45 C 90 30, 110 30, 110 45 Z" fill={style.bud} />
-             <circle cx="100" cy="40" r="10" fill={style.petalAccent} />
+            <circle cx="100" cy="45" r="12" fill={style.center} />
         </g>
 
         {/* Petals */}
         <g style={{ transformOrigin: '50% 45px', transform: `scale(${petalScale})`, transition: 'transform 1s ease-out'}} opacity={getOpacity(80)}>
            <PetalComponent style={style} />
         </g>
+        
+        {/* Center Detail */}
+         <g style={{ transformOrigin: 'center', transform: `scale(${petalScale})`, transition: 'transform 1s ease-out' }} opacity={getOpacity(85)}>
+            <circle cx="100" cy="45" r="12" fill={style.center} stroke="#000" strokeWidth="0.5" />
+             {[0, 45, 90, 135, 180, 225, 270, 315].map(angle => (
+                 <line key={angle} x1="100" y1="45" x2="100" y2="36" stroke={style.petalAccent} strokeWidth="1" transform={`rotate(${angle + 22.5} 100 45)`} />
+             ))}
+        </g>
 
 
         {/* Fully Bloomed Sparkle */}
         {progress >= 100 && (
-           <g style={{ animation: 'pulse 2s infinite' }}>
-              <path d="M100 10 L103 23 L115 25 L103 27 L100 40 L97 27 L85 25 L97 23 Z" fill={style.petalAccent} opacity="0.7"/>
+           <g style={{ animation: 'pulse 2s infinite', transformOrigin: '100px 45px' }}>
+              <path d="M100 10 L103 23 L115 25 L103 27 L100 40 L97 27 L85 25 L97 23 Z" fill="rgba(255, 255, 255, 0.8)" opacity="0.7"/>
            </g>
         )}
         <style>{`

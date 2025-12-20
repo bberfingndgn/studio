@@ -42,7 +42,7 @@ export default function Header() {
         <Link href="/" className="mr-6 flex items-center space-x-2">
           <Leaf className="h-6 w-6 text-primary" />
           <span className="font-bold font-headline text-lg text-foreground">
-            Focus Bloom
+            Focus Flow
           </span>
         </Link>
         

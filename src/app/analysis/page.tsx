@@ -21,50 +21,51 @@ const chartConfig = {
 export default function AnalysisPage() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
+  const { firestore } = useFirebase();
 
   useEffect(() => {
     if (!isUserLoading && !user) {
-      router.push('/login');
+      // For this demonstration, we won't redirect, so we can see the mock data.
+      // router.push('/login');
     }
   }, [user, isUserLoading, router]);
 
   const studySessionsQuery = useMemoFirebase(
     () => (user ? collection(firestore, 'users', user.uid, 'studySessions') : null),
-    [user]
+    [firestore, user]
   );
   
   const { data: studySessions, isLoading: isSessionsLoading } = useCollection<StudySession>(studySessionsQuery);
 
   const chartData = useMemo(() => {
-    if (!studySessions) {
-      // Return mock data for logged-out or initial state for demonstration
-      return [{ subject: 'Mathematics', minutes: 60 }];
+    // If logged in and has data, use it. Otherwise, use mock data.
+    if (user && studySessions && studySessions.length > 0) {
+      const subjectDurations: { [key: string]: number } = {};
+      studySessions.forEach(session => {
+        const subjectName = session.subjectId || 'Uncategorized';
+        if (!subjectDurations[subjectName]) {
+          subjectDurations[subjectName] = 0;
+        }
+        subjectDurations[subjectName] += session.duration;
+      });
+
+      return Object.keys(subjectDurations).map(subject => ({
+        subject,
+        minutes: Math.round(subjectDurations[subject]),
+      }));
     }
-
-    const subjectDurations: { [key: string]: number } = {};
-    studySessions.forEach(session => {
-      const subjectName = session.subjectId || 'Uncategorized';
-      if (!subjectDurations[subjectName]) {
-        subjectDurations[subjectName] = 0;
-      }
-      subjectDurations[subjectName] += session.duration;
-    });
-
-    return Object.keys(subjectDurations).map(subject => ({
-      subject,
-      minutes: Math.round(subjectDurations[subject]),
-    }));
-  }, [studySessions]);
+    
+    // Return mock data for logged-out or initial state for demonstration
+    return [
+      { subject: 'Mathematics', minutes: 60 },
+      { subject: 'English', minutes: 25 },
+    ];
+  }, [studySessions, user]);
 
   const isLoading = isUserLoading || (user && isSessionsLoading);
 
   if (isLoading) {
     return <div className="flex-1 flex items-center justify-center"><LoaderCircle className="h-12 w-12 animate-spin text-primary" /></div>;
-  }
-  
-  if (!user) {
-    // This part is for logged out users to see the mock data.
-    // The useEffect will have already tried to redirect.
   }
 
   return (

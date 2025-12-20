@@ -32,20 +32,20 @@ export default function StudyPlanPage() {
   const { toast } = useToast();
 
    useEffect(() => {
-    if (formState.error) {
+    if (formState.error && !formState.fieldErrors) { // Only toast for general errors
       toast({
         variant: "destructive",
         title: "Oh no! Something went wrong.",
         description: formState.error,
       });
     }
-  }, [formState.error, toast]);
+  }, [formState, toast]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
     const formData = new FormData(event.currentTarget);
-    const result = await generateStudyPlanAction(formState, formData);
+    const result = await generateStudyPlanAction(initialState, formData);
     setFormState(result);
     setLoading(false);
   }

@@ -1,3 +1,7 @@
+
+'use client';
+
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
@@ -6,6 +10,7 @@ import { type ImagePlaceholder } from '@/lib/placeholder-images';
 import { Calendar, Book } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { cn } from '@/lib/utils';
+import { Skeleton } from '../ui/skeleton';
 
 interface GrownFlowerCardProps {
   flower: GrownFlower;
@@ -20,6 +25,14 @@ const subjectColors: Record<string, string> = {
 }
 
 export function GrownFlowerCard({ flower, flowerData }: GrownFlowerCardProps) {
+  const [formattedDate, setFormattedDate] = useState<string | null>(null);
+
+  useEffect(() => {
+    // This ensures that the date formatting only runs on the client-side,
+    // after the initial hydration, preventing a mismatch with the server-rendered HTML.
+    setFormattedDate(flower.grownAt.toLocaleDateString());
+  }, [flower.grownAt]);
+
   return (
     <Link href={`/subjects/${encodeURIComponent(flower.subject)}`} className="block group">
       <Card className="overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1 h-full">
@@ -44,7 +57,11 @@ export function GrownFlowerCard({ flower, flowerData }: GrownFlowerCardProps) {
             </div>
             <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
               <Calendar className="w-3.5 h-3.5" />
-              <span>Grown on {flower.grownAt.toLocaleDateString()}</span>
+              {formattedDate ? (
+                  <span>Grown on {formattedDate}</span>
+              ) : (
+                <Skeleton className="h-4 w-24" />
+              )}
             </div>
           </div>
         </CardContent>

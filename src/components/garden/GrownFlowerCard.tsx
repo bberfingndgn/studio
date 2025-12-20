@@ -27,7 +27,7 @@ export function GrownFlowerCard({ flower, flowerData }: GrownFlowerCardProps) {
           <div className="aspect-square overflow-hidden">
             <Image
               src={flowerData.imageUrl}
-              alt={flower.subject}
+              alt={flowerData.description || flower.subject}
               width={400}
               height={400}
               data-ai-hint={flowerData.imageHint}

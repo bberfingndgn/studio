@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { achievements } from '@/lib/data';
 import { useFirebase, useUser, useDoc, useCollection, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { doc, setDoc, collection, query, where, orderBy } from 'firebase/firestore';
+import { doc, collection } from 'firebase/firestore';
 import { GrownFlowerCard } from '@/components/garden/GrownFlowerCard';
 import type { GrownFlower, StudySession, UserProfile } from '@/lib/types';
 import { placeholderImages } from '@/lib/placeholder-images';

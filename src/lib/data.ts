@@ -15,7 +15,7 @@ export const achievements: Achievement[] = [
     title: 'Study Sprout',
     description: 'Accumulate 1 hour of focused study time.',
     milestoneHours: 1,
-    unlocked: true,
+    unlocked: false,
     Icon: Zap,
   },
   {
@@ -43,12 +43,12 @@ export const achievements: Achievement[] = [
     title: 'Bloom Expert',
     description: 'Grow your first complete flower.',
     milestoneHours: 4, 
-    unlocked: true,
+    unlocked: false,
     Icon: Mountain,
   },
   {
     id: 'companion-friend',
-    title: 'Companion Dostu',
+    title: 'Companion Friend',
     description: 'Click on your companion 10 times.',
     milestoneHours: 0, // This is not time-based
     unlocked: false,
@@ -57,7 +57,7 @@ export const achievements: Achievement[] = [
   },
   {
     id: 'perfect-timing',
-    title: 'Mükemmel Zamanlama',
+    title: 'Perfect Timing',
     description: 'Finish a study session exactly on time.',
     milestoneHours: 0,
     unlocked: false,

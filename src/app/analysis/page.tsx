@@ -7,7 +7,7 @@ import { useUser, useFirebase, useCollection, useMemoFirebase } from '@/firebase
 import { collection } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { LoaderCircle } from 'lucide-react';
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import type { StudySession } from '@/lib/types';
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 
@@ -18,41 +18,36 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-const MOCK_SESSIONS: StudySession[] = [
-    {
-        id: 'mock-1',
-        userId: 'mock-user',
-        subjectId: 'Mathematics',
-        startTime: new Date().toISOString(),
-        endTime: new Date().toISOString(),
-        duration: 60, // 60 minutes for Mathematics
-    }
-];
-
 export default function AnalysisPage() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
 
-  // This will still run to guide non-logged-in users away, but we won't use the fetched data for now.
   useEffect(() => {
     if (!isUserLoading && !user) {
       router.push('/login');
     }
   }, [user, isUserLoading, router]);
 
-  const studySessions = MOCK_SESSIONS;
-  const isSessionsLoading = false;
-
+  const studySessionsQuery = useMemoFirebase(
+    () => (user ? collection(firestore, 'users', user.uid, 'studySessions') : null),
+    [user]
+  );
+  
+  const { data: studySessions, isLoading: isSessionsLoading } = useCollection<StudySession>(studySessionsQuery);
 
   const chartData = useMemo(() => {
-    if (!studySessions) return [];
+    if (!studySessions) {
+      // Return mock data for logged-out or initial state for demonstration
+      return [{ subject: 'Mathematics', minutes: 60 }];
+    }
 
     const subjectDurations: { [key: string]: number } = {};
     studySessions.forEach(session => {
-      if (!subjectDurations[session.subjectId]) {
-        subjectDurations[session.subjectId] = 0;
+      const subjectName = session.subjectId || 'Uncategorized';
+      if (!subjectDurations[subjectName]) {
+        subjectDurations[subjectName] = 0;
       }
-      subjectDurations[session.subjectId] += session.duration;
+      subjectDurations[subjectName] += session.duration;
     });
 
     return Object.keys(subjectDurations).map(subject => ({
@@ -61,11 +56,16 @@ export default function AnalysisPage() {
     }));
   }, [studySessions]);
 
-  if (isUserLoading || isSessionsLoading) {
+  const isLoading = isUserLoading || (user && isSessionsLoading);
+
+  if (isLoading) {
     return <div className="flex-1 flex items-center justify-center"><LoaderCircle className="h-12 w-12 animate-spin text-primary" /></div>;
   }
   
-  if (!user) return null;
+  if (!user) {
+    // This part is for logged out users to see the mock data.
+    // The useEffect will have already tried to redirect.
+  }
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -88,7 +88,7 @@ export default function AnalysisPage() {
                 <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                     <XAxis dataKey="subject" stroke="hsl(var(--foreground))" fontSize={12} tickLine={false} axisLine={false} />
                     <YAxis stroke="hsl(var(--foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value} min`} />
-                    <Tooltip 
+                    <ChartTooltip 
                         content={<ChartTooltipContent />}
                         cursor={{fill: "hsl(var(--secondary))"}} 
                     />

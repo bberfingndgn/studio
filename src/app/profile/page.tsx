@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoaderCircle, User, Mail, Calendar, Clock } from 'lucide-react';
 import { doc } from 'firebase/firestore';
+import type { UserProfile } from '@/lib/types';
 
 export default function ProfilePage() {
   const { user, isUserLoading } = useUser();
@@ -19,12 +20,7 @@ export default function ProfilePage() {
     [firestore, user]
   );
   
-  const { data: userProfile, isLoading: isProfileLoading } = useDoc<{
-    displayName: string;
-    email: string;
-    createdAt: string;
-    totalStudyTime: number;
-  }>(userProfileRef);
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -32,19 +28,24 @@ export default function ProfilePage() {
     }
   }, [user, isUserLoading, router]);
 
-  if (isUserLoading || isProfileLoading || !userProfile) {
+  const isLoading = isUserLoading || isProfileLoading;
+
+  if (isLoading || !userProfile) {
     return <div className="flex-1 flex items-center justify-center"><LoaderCircle className="h-12 w-12 animate-spin text-primary" /></div>;
   }
   
-  const formatStudyTime = (seconds: number) => {
+  const formatStudyTime = (seconds: number = 0) => {
       const hours = Math.floor(seconds / 3600);
       const minutes = Math.floor((seconds % 3600) / 60);
       return `${hours}h ${minutes}m`;
   }
   
-  const memberSince = new Date(userProfile.createdAt).toLocaleDateString('en-US', {
+  const memberSince = new Date(userProfile.createdAt || new Date()).toLocaleDateString('en-US', {
       year: 'numeric', month: 'long', day: 'numeric'
   });
+
+  const displayName = userProfile.username || user.displayName || 'Anonymous';
+  const avatarFallback = displayName.charAt(0).toUpperCase();
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -52,10 +53,10 @@ export default function ProfilePage() {
         <Card>
           <CardHeader className="text-center">
             <Avatar className="w-24 h-24 mx-auto mb-4 border-4 border-primary">
-              <AvatarImage src={user.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${user.uid}`} alt={userProfile.displayName} />
-              <AvatarFallback>{userProfile.displayName?.charAt(0)}</AvatarFallback>
+              <AvatarImage src={user.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${user.uid}`} alt={displayName} />
+              <AvatarFallback>{avatarFallback}</AvatarFallback>
             </Avatar>
-            <CardTitle className="text-3xl font-bold">{userProfile.displayName}</CardTitle>
+            <CardTitle className="text-3xl font-bold">{displayName}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6 text-lg">
              <div className="flex items-center gap-4">
@@ -76,4 +77,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-

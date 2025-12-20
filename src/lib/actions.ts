@@ -19,7 +19,8 @@ export async function generateStudyPlanAction(prevState: any, formData: FormData
   if (!validatedFields.success) {
     return {
       studyPlan: null,
-      error: validatedFields.error.flatten().fieldErrors,
+      error: "Please check the form for errors.",
+      fieldErrors: validatedFields.error.flatten().fieldErrors,
     };
   }
 
@@ -28,12 +29,14 @@ export async function generateStudyPlanAction(prevState: any, formData: FormData
     return {
       studyPlan: result.studyPlan,
       error: null,
+      fieldErrors: {},
     };
   } catch (error) {
     console.error("Error generating study plan:", error);
     return {
       studyPlan: null,
       error: "There was an issue with the AI. Please try again.",
+      fieldErrors: {},
     };
   }
 }

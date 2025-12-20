@@ -49,6 +49,7 @@ export default function SignUpPage() {
         email: firebaseUser.email,
         createdAt: new Date().toISOString(),
         totalStudyTime: 0,
+        companionClicks: 0,
       });
 
       router.push('/');

@@ -1,5 +1,5 @@
 import { type Achievement } from '@/lib/types';
-import { Timer, Zap, Sun, Award, Mountain } from 'lucide-react';
+import { Timer, Zap, Sun, Award, Mountain, Heart, MousePointerClick, Star } from 'lucide-react';
 import { placeholderImages } from './placeholder-images';
 
 export const achievements: Achievement[] = [
@@ -26,6 +26,10 @@ export const achievements: Achievement[] = [
     milestoneHours: 5,
     unlocked: false,
     Icon: Sun,
+    reward: {
+        type: 'flower',
+        item: 'lavender'
+    }
   },
   {
     id: '4',
@@ -42,5 +46,23 @@ export const achievements: Achievement[] = [
     milestoneHours: 4, 
     unlocked: true,
     Icon: Mountain,
+  },
+  {
+    id: 'companion-friend',
+    title: 'Companion Dostu',
+    description: 'Click on your companion 10 times.',
+    milestoneHours: 0, // This is not time-based
+    unlocked: false,
+    Icon: Heart,
+    hidden: true,
+  },
+  {
+    id: 'perfect-timing',
+    title: 'Mükemmel Zamanlama',
+    description: 'Finish a study session exactly on time.',
+    milestoneHours: 0,
+    unlocked: false,
+    Icon: Star,
+    hidden: true,
   },
 ];

@@ -9,13 +9,14 @@ import { UpcomingAchievements } from '@/components/dashboard/UpcomingAchievement
 import { SECONDS_TO_GROW_FLOWER, USER_NAME } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import { achievements } from '@/lib/data';
-import { useFirebase, useUser, useDoc, useCollection, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
+import { useFirebase, useUser, useDoc, useCollection, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { doc, setDoc, collection, query, where, orderBy } from 'firebase/firestore';
 import { GrownFlowerCard } from '@/components/garden/GrownFlowerCard';
-import type { GrownFlower, StudySession } from '@/lib/types';
+import type { GrownFlower, StudySession, UserProfile } from '@/lib/types';
 import { placeholderImages } from '@/lib/placeholder-images';
 import type { ImagePlaceholder } from '@/lib/placeholder-images';
+import { LoaderCircle } from 'lucide-react';
 
 type TimerStatus = 'running' | 'paused' | 'stopped';
 
@@ -37,7 +38,7 @@ export default function Home() {
     [firestore, user]
   );
   
-  const { data: userProfile, isLoading: isProfileLoading } = useDoc<{totalStudyTime: number}>(userProfileRef);
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
   const studySessionsRef = useMemoFirebase(() =>
     user ? collection(firestore, 'users', user.uid, 'studySessions') : null, [firestore, user]
@@ -96,6 +97,18 @@ export default function Home() {
 
   }, [studySessions]);
 
+  const unlockAchievement = useCallback((achievementId: string) => {
+     const achievement = achievements.find(a => a.id === achievementId);
+     if (achievement && !achievement.unlocked) {
+       achievement.unlocked = true; // Mutating for session state, won't persist across reloads
+       toast({
+         title: "Achievement Unlocked! 🏆",
+         description: `You've earned the "${achievement.title}" badge!`,
+       });
+     }
+  }, [toast]);
+
+
   const handleSessionComplete = useCallback(async (sessionDuration: number, subject: string) => {
     if (!user || !userProfileRef || !firestore) return;
 
@@ -113,7 +126,7 @@ export default function Home() {
       duration: sessionDuration / 60, // duration in minutes
     });
     
-    setDoc(userProfileRef, { totalStudyTime: newTotalStudyTime }, { merge: true });
+    updateDocumentNonBlocking(userProfileRef, { totalStudyTime: newTotalStudyTime });
     
     const oldFlowers = Math.floor(totalStudyTime / SECONDS_TO_GROW_FLOWER);
     const newFlowers = Math.floor(newTotalStudyTime / SECONDS_TO_GROW_FLOWER);
@@ -127,17 +140,15 @@ export default function Home() {
     
     achievements.forEach(achievement => {
       if (!achievement.unlocked && newTotalStudyTime >= (achievement.milestoneHours * 3600)) {
-        achievement.unlocked = true; 
-        toast({
-          title: "Achievement Unlocked! 🏆",
-          description: `You've earned the "${achievement.title}" badge!`,
-        });
+        unlockAchievement(achievement.id);
       }
     });
 
+    unlockAchievement('perfect-timing');
+
     setSessionProgress(0); // Reset progress on complete
 
-  }, [totalStudyTime, user, userProfileRef, toast, firestore]);
+  }, [totalStudyTime, user, userProfileRef, toast, firestore, unlockAchievement]);
 
   const handleStatusChange = (status: TimerStatus) => {
     setTimerStatus(status);
@@ -150,10 +161,22 @@ export default function Home() {
     setSessionProgress(progress);
   };
 
+  const handleCompanionClick = useCallback(() => {
+    if (!userProfileRef || userProfile === undefined) return;
+    const newClickCount = (userProfile?.companionClicks || 0) + 1;
+    updateDocumentNonBlocking(userProfileRef, { companionClicks: newClickCount });
+
+    if (newClickCount >= 10) {
+        unlockAchievement('companion-friend');
+    }
+
+  }, [userProfile, userProfileRef, unlockAchievement]);
+
+
   if (isUserLoading || isProfileLoading || isSessionsLoading) {
       return (
-          <div className="flex items-center justify-center flex-1">
-              <p>Loading...</p>
+          <div className="flex-1 flex items-center justify-center">
+              <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
           </div>
       )
   }
@@ -162,7 +185,7 @@ export default function Home() {
       return null;
   }
 
-  const flowerProgress = status === 'running' || status === 'paused' 
+  const flowerProgress = timerStatus === 'running' || timerStatus === 'paused' 
     ? sessionProgress 
     : (totalStudyTime % SECONDS_TO_GROW_FLOWER) / SECONDS_TO_GROW_FLOWER * 100;
 
@@ -175,6 +198,7 @@ export default function Home() {
             timerStatus={timerStatus}
             progressPercentage={flowerProgress}
             userName={user.displayName || USER_NAME}
+            onClick={handleCompanionClick}
           />
         </div>
 

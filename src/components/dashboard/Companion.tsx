@@ -12,9 +12,10 @@ interface CompanionProps {
   timerStatus: TimerStatus;
   progressPercentage: number;
   userName: string;
+  onClick?: () => void;
 }
 
-export function Companion({ timerStatus, progressPercentage, userName }: CompanionProps) {
+export function Companion({ timerStatus, progressPercentage, userName, onClick }: CompanionProps) {
   const [message, setMessage] = useState("Let's get studying!");
   const [isLoading, setIsLoading] = useState(false);
   const [characterState, setCharacterState] = useState('idle');
@@ -57,7 +58,7 @@ export function Companion({ timerStatus, progressPercentage, userName }: Compani
   }, [timerStatus, progressPercentage, userName]);
 
   const CompanionCharacter = () => (
-    <div className="relative w-24 h-24">
+    <div className="relative w-24 h-24 cursor-pointer" onClick={onClick}>
       <div className={`absolute inset-0 bg-yellow-300 rounded-full transition-all duration-500 ${characterState === 'thinking' ? 'animate-pulse' : ''}`}></div>
       <div className={`absolute top-1/3 left-1/4 w-4 h-4 bg-foreground rounded-full transition-transform duration-300 ${characterState === 'talking' ? 'scale-y-50' : ''}`}></div>
       <div className={`absolute top-1/3 right-1/4 w-4 h-4 bg-foreground rounded-full transition-transform duration-300 ${characterState === 'talking' ? 'scale-y-50' : ''}`}></div>

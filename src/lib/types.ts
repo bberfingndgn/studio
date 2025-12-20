@@ -7,6 +7,11 @@ export interface Achievement {
   milestoneHours: number;
   unlocked: boolean;
   Icon: LucideIcon;
+  hidden?: boolean; // For secret achievements
+  reward?: {
+    type: 'flower' | 'decoration' | 'costume';
+    item: string;
+  }
 }
 
 export interface GrownFlower {
@@ -23,4 +28,13 @@ export interface StudySession {
     startTime: string;
     endTime: string;
     duration: number; // in minutes
+}
+
+export interface UserProfile {
+    id: string;
+    username: string;
+    email: string;
+    createdAt: string;
+    totalStudyTime: number;
+    companionClicks: number;
 }

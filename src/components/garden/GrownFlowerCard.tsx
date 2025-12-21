@@ -26,7 +26,13 @@ const subjectColors: Record<string, string> = {
 }
 
 export function GrownFlowerCard({ flower, flowerData }: GrownFlowerCardProps) {
-  const formattedDate = flower.grownAt.toLocaleDateString();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const formattedDate = isMounted ? flower.grownAt.toLocaleDateString() : '';
 
   return (
     <Link href={`/subjects/${encodeURIComponent(flower.subject)}`} className="block group">
@@ -52,7 +58,11 @@ export function GrownFlowerCard({ flower, flowerData }: GrownFlowerCardProps) {
             </div>
             <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
               <Calendar className="w-3.5 h-3.5" />
-              <span>Grown on {formattedDate}</span>
+              {isMounted ? (
+                <span>Grown on {formattedDate}</span>
+              ) : (
+                <Skeleton className="h-4 w-24" />
+              )}
             </div>
           </div>
         </CardContent>
